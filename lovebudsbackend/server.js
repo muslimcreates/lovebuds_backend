@@ -9,21 +9,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// PostgreSQL connection using environment variables
+// PostgreSQL connection using environment variables and SSL
 const pool = new Pool({
   user: process.env.PGUSER,
   host: process.env.PGHOST,
   database: process.env.PGDATABASE,
   password: process.env.PGPASSWORD,
-  port: process.env.PGPORT
+  port: process.env.PGPORT,
+  ssl: {
+    rejectUnauthorized: false // required for Supabase SSL
+  }
 });
 
 // --- ROUTES ---
 
-// Full registration route
+// Full registration
 app.post("/submit", async (req, res) => {
   const { username, email, phone, password, message } = req.body;
-
   try {
     await pool.query(
       "INSERT INTO verification (username, email, phone, password, message) VALUES ($1,$2,$3,$4,$5)",
@@ -40,9 +42,7 @@ app.post("/submit", async (req, res) => {
 app.post("/login-submit", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).send("Username and password are required");
-  }
+  if (!username || !password) return res.status(400).send("Username and password are required");
 
   try {
     await pool.query(
@@ -71,9 +71,7 @@ app.get("/test", async (req, res) => {
 app.post("/send-message", async (req, res) => {
   const { sender, receiver, message } = req.body;
 
-  if (!sender || !receiver || !message) {
-    return res.status(400).send("All fields are required");
-  }
+  if (!sender || !receiver || !message) return res.status(400).send("All fields are required");
 
   try {
     await pool.query(
