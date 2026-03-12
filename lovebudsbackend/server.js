@@ -9,23 +9,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// PostgreSQL connection using environment variables and SSL
+// PostgreSQL connection using environment variables (for Render + Supabase)
 const pool = new Pool({
-  user: process.env.PGUSER,
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE,
-  password: process.env.PGPASSWORD,
-  port: process.env.PGPORT,
-  ssl: {
-    rejectUnauthorized: false // required for Supabase SSL
-  }
+  ssl: { rejectUnauthorized: false } // Required for Supabase
 });
 
 // --- ROUTES ---
 
-// Full registration
+// Full registration route
 app.post("/submit", async (req, res) => {
   const { username, email, phone, password, message } = req.body;
+
   try {
     await pool.query(
       "INSERT INTO verification (username, email, phone, password, message) VALUES ($1,$2,$3,$4,$5)",
@@ -33,7 +27,7 @@ app.post("/submit", async (req, res) => {
     );
     res.status(200).send("Data saved!");
   } catch (err) {
-    console.error(err);
+    console.error("Error saving data:", err.message);
     res.status(500).send("Error saving data");
   }
 });
@@ -42,7 +36,9 @@ app.post("/submit", async (req, res) => {
 app.post("/login-submit", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password) return res.status(400).send("Username and password are required");
+  if (!username || !password) {
+    return res.status(400).send("Username and password are required");
+  }
 
   try {
     await pool.query(
@@ -51,7 +47,7 @@ app.post("/login-submit", async (req, res) => {
     );
     res.status(200).send("Login info saved!");
   } catch (err) {
-    console.error(err);
+    console.error("Error saving login info:", err.message);
     res.status(500).send("Error saving login info");
   }
 });
@@ -62,7 +58,7 @@ app.get("/test", async (req, res) => {
     const result = await pool.query("SELECT * FROM verification ORDER BY id DESC");
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching data:", err.message);
     res.status(500).send("Error fetching data");
   }
 });
@@ -71,7 +67,9 @@ app.get("/test", async (req, res) => {
 app.post("/send-message", async (req, res) => {
   const { sender, receiver, message } = req.body;
 
-  if (!sender || !receiver || !message) return res.status(400).send("All fields are required");
+  if (!sender || !receiver || !message) {
+    return res.status(400).send("All fields are required");
+  }
 
   try {
     await pool.query(
@@ -80,7 +78,7 @@ app.post("/send-message", async (req, res) => {
     );
     res.status(200).send("Message sent!");
   } catch (err) {
-    console.error(err);
+    console.error("Error sending message:", err.message);
     res.status(500).send("Error sending message");
   }
 });
@@ -96,7 +94,7 @@ app.get("/messages/:username", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching messages:", err.message);
     res.status(500).send("Error fetching messages");
   }
 });
